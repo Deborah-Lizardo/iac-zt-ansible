@@ -1,0 +1,33 @@
+- name: Configure intermediate perimeter security
+  hosts: all
+  become: true
+
+  tasks:
+
+    - name: Install UFW firewall
+      apt:
+        name: ufw
+        state: present
+        update_cache: yes
+
+    - name: Allow only HTTP 8082 (service port)
+      ufw:
+        rule: allow
+        port: "8082"
+        proto: tcp
+
+    - name: Set default incoming policy to deny
+      ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Validate exposed service
+      shell: curl -I http://localhost:8082
+      register: curl_output
+
+    - debug:
+        var: curl_output.stdout

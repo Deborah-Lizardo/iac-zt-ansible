@@ -1,0 +1,72 @@
+- name: Configure Advanced Perimeter Security
+  hosts: advanced
+  become: true
+
+  tasks:
+
+    - name: Install required packages
+      apt:
+        name:
+          - ufw
+          - docker.io
+          - curl
+          - nmap
+        state: present
+        update_cache: yes
+
+    - name: Create Docker network (isolation layer)
+      docker_network:
+        name: adv-net
+        state: present
+
+    - name: Run secure nginx container (advanced perimeter)
+      docker_container:
+        name: adv-nginx
+        image: nginx
+        state: started
+        restart_policy: always
+        ports:
+          - "8084:80"
+        networks:
+          - name: adv-net
+
+    - name: Reset UFW (clean state)
+      ufw:
+        state: reset
+
+    - name: Set default deny incoming
+      ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Set default allow outgoing
+      ufw:
+        direction: outgoing
+        policy: allow
+
+    - name: Allow ONLY internal subnet to 8084
+      ufw:
+         rule: allow
+         from_ip: 10.32.11.0/26
+         port: "8084"
+         proto: tcp
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+
+    - name: Validate service availability
+      shell: curl -s -o /dev/null -w "%{http_code}" http://localhost:8084
+      register: curl_result
+
+    - name: Show validation result
+      debug:
+        var: curl_result.stdout
+
+    - name: Run Nmap validation
+      shell: nmap -p 8081,8082,8084 localhost
+      register: nmap_result
+
+    - name: Show Nmap result
+      debug:
+        var: nmap_result.stdout

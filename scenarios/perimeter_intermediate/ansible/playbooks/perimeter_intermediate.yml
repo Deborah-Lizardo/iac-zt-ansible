@@ -10,11 +10,16 @@
         state: present
         update_cache: yes
 
-    - name: Allow only HTTP 8082 (service port)
+    - name: Allow only HTTP 8082 (service port-intermediate)
       ufw:
         rule: allow
         port: "8082"
         proto: tcp
+
+    - name: Deny all other incoming traffic
+      ufw:
+        default: deny
+        direction: incoming
 
     - name: Set default incoming policy to deny
       ufw:

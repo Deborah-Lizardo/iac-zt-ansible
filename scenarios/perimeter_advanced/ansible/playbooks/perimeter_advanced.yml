@@ -64,9 +64,19 @@
         var: curl_result.stdout
 
     - name: Run Nmap validation
-      shell: nmap -p 8081,8082,8084 localhost
+      shell: nmap -p 8084 localhost
       register: nmap_result
 
     - name: Show Nmap result
       debug:
         var: nmap_result.stdout
+        
+    - name: Run isolated client container
+      docker_container:
+        name: adv-client
+        image: alpine:3.20
+        command: sleep infinity
+        state: started
+        restart_policy: always
+        networks:
+          - name: adv-net
